@@ -3,8 +3,32 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import os
+import sys
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+
+def _is_packaged() -> bool:
+    return bool(getattr(sys, "frozen", False))
+
+
+def _resource_base_dir() -> Path:
+    if _is_packaged():
+        return Path(getattr(sys, "_MEIPASS"))
+    return Path(__file__).resolve().parent.parent
+
+
+def _user_data_dir() -> Path:
+    override = os.environ.get("GRE2TOR_USER_DATA_DIR")
+    if override:
+        return Path(override).expanduser()
+    if sys.platform == "win32":
+        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+        return base / "GRE2Tor"
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "GRE2Tor"
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "gre2tor"
+
+
+BASE_DIR = _resource_base_dir()
 DEFAULT_PDF_SOURCE_DIR = Path(
     "/Users/skinzey/Library/CloudStorage/GoogleDrive-steve@sk-america.com/My Drive/Math Bible (1)"
 )
@@ -62,8 +86,10 @@ def load_settings(*, env_file: bool = True, overrides: dict | None = None) -> Se
         _load_env_file(BASE_DIR / ".env")
 
     overrides = overrides or {}
-    instance_path = _resolve_path(overrides.get("INSTANCE_PATH", BASE_DIR / "instance"))
-    database_path = _resolve_path(overrides.get("DATABASE_PATH", os.environ.get("DATABASE_PATH", "instance/gre2tor.sqlite3")))
+    default_instance_path = _user_data_dir() if _is_packaged() else BASE_DIR / "instance"
+    default_database_path = default_instance_path / "gre2tor.sqlite3" if _is_packaged() else "instance/gre2tor.sqlite3"
+    instance_path = _resolve_path(overrides.get("INSTANCE_PATH", os.environ.get("INSTANCE_PATH", default_instance_path)))
+    database_path = _resolve_path(overrides.get("DATABASE_PATH", os.environ.get("DATABASE_PATH", default_database_path)))
     pdf_source_dir = _resolve_path(overrides.get("PDF_SOURCE_DIR", os.environ.get("PDF_SOURCE_DIR", DEFAULT_PDF_SOURCE_DIR)))
 
     return Settings(

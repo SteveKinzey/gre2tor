@@ -49,7 +49,28 @@ tests/                     Pytest suite
 
 GRE2Tor is a local web app. You run it on a Mac or Windows computer, then use it in a browser. A phone or tablet can use it too if it is on the same Wi-Fi network as the computer running the app.
 
-### macOS
+### Option 1: packaged download
+
+When a release is published, download the ZIP for your computer from the GitHub Releases page:
+
+```text
+https://github.com/SteveKinzey/gre2tor/releases
+```
+
+- macOS: download `GRE2Tor-darwin-*.zip`, unzip it, then run `GRE2Tor`.
+- Windows: download `GRE2Tor-windows-*.zip`, unzip it, then run `GRE2Tor.exe`.
+
+The packaged app includes the Python runtime, Flask app, templates, static files, and seed flashcards. No manual Python setup is required.
+
+The app checks GitHub Releases for updates and shows a download banner when a newer version is available. If you are offline, it keeps working and simply skips the update prompt.
+
+If macOS blocks the app because it was downloaded from the internet, right-click the app/executable, choose **Open**, then confirm.
+
+### Option 2: run from source
+
+Use this if there is no release package yet, or if you want to modify the app.
+
+#### macOS
 
 1. Download or clone this repo.
 2. Open the folder in Finder.
@@ -58,7 +79,7 @@ GRE2Tor is a local web app. You run it on a Mac or Windows computer, then use it
 
 The launcher creates a local Python environment, installs dependencies, seeds the flashcards, starts the app, and opens your browser.
 
-### Windows
+#### Windows
 
 1. Download or clone this repo.
 2. Open the folder in File Explorer.
@@ -67,7 +88,6 @@ The launcher creates a local Python environment, installs dependencies, seeds th
 The launcher creates a local Python environment, installs dependencies, seeds the flashcards, starts the app, and opens your browser.
 
 ### Phone or tablet access
-
 After starting GRE2Tor on your computer, the terminal prints two URLs:
 
 ```text
@@ -269,6 +289,39 @@ There are more `Answer:` markers in the PDFs than promoted cards. Those remainin
 - Do not commit `.env`.
 - Do not commit local SQLite databases under `instance/`.
 - Treat any future user progress, private notes, or source documents as local/private data.
+
+## Building release packages
+
+Release packages are built with PyInstaller.
+
+Install development dependencies:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
+Build a package for the current operating system:
+
+```bash
+python scripts/build_package.py
+```
+
+The ZIP output is written to `dist/`.
+
+Important packaging notes:
+
+- Build macOS packages on macOS.
+- Build Windows packages on Windows.
+- The GitHub Actions workflow `.github/workflows/build-packages.yml` builds both platforms automatically.
+- The app version lives in `gre2tor/version.py`; update it before tagging a release.
+- Push a tag like `v0.1.0` to create a GitHub Release with downloadable ZIP artifacts.
+
+Example release tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
 
 ## Development notes
 

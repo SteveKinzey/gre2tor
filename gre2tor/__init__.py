@@ -13,6 +13,8 @@ from .db import (
     list_topic_stats,
 )
 from .quiz import record_card_attempt, select_cards
+from .updates import check_for_updates
+from .version import APP_VERSION
 
 
 def create_app(config_override: dict | None = None):
@@ -38,6 +40,10 @@ def create_app(config_override: dict | None = None):
         if value is None:
             return "—"
         return f"{float(value):.1f}%"
+
+    @app.context_processor
+    def inject_app_metadata():
+        return {"app_version": APP_VERSION, "update_info": check_for_updates()}
 
     @app.get("/")
     def index():
@@ -124,7 +130,12 @@ def create_app(config_override: dict | None = None):
     def health():
         with connection(settings.DATABASE_PATH) as conn:
             stats = get_overall_progress(conn)
-        return jsonify({"ok": True, **stats})
+        return jsonify({"ok": True, "version": APP_VERSION, **stats})
+
+    @app.get("/api/updates")
+    def api_updates():
+        force = request.args.get("force") == "1"
+        return jsonify(check_for_updates(force=force))
 
     @app.get("/study")
     def study_redirect():

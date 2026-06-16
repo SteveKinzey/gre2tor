@@ -18,6 +18,11 @@ instance/
 *.sqlite3
 *.db
 
+# Build/release output
+build/
+dist/
+*.spec.tmp
+
 # Generated PDF extraction/draft output
 data/extracted/*.json
 data/drafts/*.json

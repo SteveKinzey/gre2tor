@@ -19,11 +19,20 @@
   </header>
 
   <main class="wrap main">
+    {% if update_info and update_info.update_available %}
+      <section class="update-banner" role="status">
+        <div>
+          <strong>GRE2Tor {{ update_info.latest_version }} is available.</strong>
+          <span>You are running {{ update_info.current_version }}.</span>
+        </div>
+        <a class="button small" href="{{ update_info.release_url }}" target="_blank" rel="noopener">Download update</a>
+      </section>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 
   <footer class="wrap footer">
-    <span>Local GRE math flashcards. Progress is stored in SQLite.</span>
+    <span>Local GRE math flashcards. Progress is stored in SQLite. Version {{ app_version }}.</span>
   </footer>
   {% block scripts %}{% endblock %}
 </body>

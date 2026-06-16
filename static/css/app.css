@@ -28,6 +28,19 @@ a:hover { text-decoration: underline; }
 .nav-links { display: flex; gap: 18px; }
 .main { padding: 32px 0 56px; }
 .footer { color: var(--muted); border-top: 1px solid var(--line); padding: 24px 0; }
+.update-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  background: #fff8df;
+  border: 1px solid #ead58d;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  padding: 14px 16px;
+}
+.update-banner span { color: var(--muted); margin-left: 6px; }
 
 .hero, .section-heading { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-bottom: 24px; }
 .hero { background: linear-gradient(135deg, var(--panel), var(--green-soft)); border: 1px solid var(--line); border-radius: 22px; padding: 32px; box-shadow: var(--shadow); }
