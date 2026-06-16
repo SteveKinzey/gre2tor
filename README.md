@@ -1,6 +1,6 @@
 # GRE2Tor
 
-GRE2Tor is a local GRE math flashcard and quiz app built with Flask and SQLite. It is designed for fast practice, spaced review, and PDF-grounded question-bank growth from the Sherpa Math Bible source PDFs.
+GRE2Tor (GRE Tutor) is a local GRE math flashcard and quiz app built with Flask and SQLite. It is designed for fast practice, spaced review, and PDF-grounded question-bank growth from the Sherpa Math Bible source PDFs.
 
 ## Current status
 
