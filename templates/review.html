@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Review · GRE2Tor{% endblock %}
+
+{% block content %}
+<section class="section-heading">
+  <div>
+    <p class="eyebrow">Review</p>
+    <h1>Missed and low-mastery cards</h1>
+    <p>Focus here after a study session.</p>
+  </div>
+  <a class="button primary" href="{{ url_for('quiz', mode='review') }}">Start Review Quiz</a>
+</section>
+
+{% if not cards %}
+  <section class="empty-state">
+    <h2>No review cards yet</h2>
+    <p>Miss a card or build more progress and this page will fill in.</p>
+    <a class="button" href="{{ url_for('quiz') }}">Study All</a>
+  </section>
+{% else %}
+  <div class="card-list">
+    {% for card in cards %}
+      <article class="review-card">
+        <div>
+          <p class="eyebrow">{{ card.topic_title }} · mastery {{ card.mastery }}/3</p>
+          <h2><a href="{{ url_for('card_detail', card_id=card.id) }}">{{ card.prompt }}</a></h2>
+          <p>{{ card.incorrect_count }} missed · {{ card.correct_count }} correct · streak {{ card.streak }}</p>
+        </div>
+        <a class="button small" href="{{ url_for('quiz', topic_id=card.topic_id, mode='missed') }}">Practice topic misses</a>
+      </article>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

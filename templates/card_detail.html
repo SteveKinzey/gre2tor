@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Card · GRE2Tor{% endblock %}
+
+{% block content %}
+<article class="panel card-detail">
+  <p class="eyebrow">{{ card.topic_title if card.topic_title else card.topic_id }} · {{ card.type.replace('_', ' ') }}</p>
+  <h1>{{ card.prompt }}</h1>
+
+  <section>
+    <h2>Answer</h2>
+    <p>{{ card.answer }}</p>
+    {% if card.explanation %}
+      <h2>Explanation</h2>
+      <p>{{ card.explanation }}</p>
+    {% endif %}
+  </section>
+
+  <dl class="mini-stats wide">
+    <div><dt>Seen</dt><dd>{{ card.seen_count|default(0) }}</dd></div>
+    <div><dt>Correct</dt><dd>{{ card.correct_count|default(0) }}</dd></div>
+    <div><dt>Missed</dt><dd>{{ card.incorrect_count|default(0) }}</dd></div>
+    <div><dt>Streak</dt><dd>{{ card.streak|default(0) }}</dd></div>
+    <div><dt>Mastery</dt><dd>{{ card.mastery|default(0) }}/3</dd></div>
+  </dl>
+
+  <div class="card-actions">
+    <a class="button primary" href="{{ url_for('quiz', topic_id=card.topic_id, mode='all') }}">Study Topic</a>
+    <a class="button" href="{{ url_for('topic_detail', topic_id=card.topic_id) }}">Back to Topic</a>
+  </div>
+</article>
+
+<section class="panel">
+  <h2>Attempt history</h2>
+  {% if attempts %}
+    <ul class="attempt-list">
+      {% for attempt in attempts %}
+        <li>
+          <span class="badge {{ 'good' if attempt.is_correct else 'bad' }}">{{ 'Correct' if attempt.is_correct else 'Missed' }}</span>
+          <span>{{ attempt.user_answer or 'No written answer' }}</span>
+          <small>{{ attempt.created_at }}</small>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No attempts yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

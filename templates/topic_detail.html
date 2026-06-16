@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} · GRE2Tor{% endblock %}
+
+{% block content %}
+<section class="hero slim">
+  <div>
+    <p class="eyebrow">Part {{ topic.part }}</p>
+    <h1>{{ topic.title }}</h1>
+    <p class="lede">{{ topic.description }}</p>
+    <p class="muted">Source: {{ topic.pdf_filename }}</p>
+  </div>
+  <div class="hero-actions">
+    <a class="button primary" href="{{ url_for('quiz', topic_id=topic.id, mode='all') }}">Study All</a>
+    <a class="button" href="{{ url_for('quiz', topic_id=topic.id, mode='new') }}">New Cards</a>
+    <a class="button" href="{{ url_for('quiz', topic_id=topic.id, mode='missed') }}">Missed Cards</a>
+  </div>
+</section>
+
+<section class="stats-grid" aria-label="Topic progress">
+  <article class="stat-card"><strong>{{ topic.total_cards }}</strong><span>Total cards</span></article>
+  <article class="stat-card"><strong>{{ topic.attempted_cards }}</strong><span>Attempted</span></article>
+  <article class="stat-card"><strong>{{ topic.accuracy|pct }}</strong><span>Accuracy</span></article>
+  <article class="stat-card"><strong>{{ topic.mastered_cards }}</strong><span>Strong cards</span></article>
+</section>
+
+<section class="panel">
+  <h2>Cards</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Prompt</th><th>Type</th><th>Difficulty</th><th>Progress</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for card in cards %}
+          <tr>
+            <td>{{ card.prompt }}</td>
+            <td>{{ card.type.replace('_', ' ') }}</td>
+            <td>{{ card.difficulty }}</td>
+            <td>{{ card.seen_count }} seen · mastery {{ card.mastery }}/3</td>
+            <td><a href="{{ url_for('card_detail', card_id=card.id) }}">Details</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

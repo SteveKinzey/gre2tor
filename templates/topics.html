@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Topics · GRE2Tor{% endblock %}
+
+{% block content %}
+<section class="section-heading">
+  <div>
+    <p class="eyebrow">Choose a topic</p>
+    <h1>GRE Math Topics</h1>
+  </div>
+  <a class="button" href="{{ url_for('quiz') }}">Study All</a>
+</section>
+
+<div class="topic-grid">
+  {% for topic in topics %}
+    <article class="topic-card">
+      <p class="eyebrow">Part {{ topic.part }}</p>
+      <h2><a href="{{ url_for('topic_detail', topic_id=topic.id) }}">{{ topic.title }}</a></h2>
+      <p>{{ topic.description }}</p>
+      <dl class="mini-stats">
+        <div><dt>Cards</dt><dd>{{ topic.total_cards }}</dd></div>
+        <div><dt>Attempted</dt><dd>{{ topic.attempted_cards }}</dd></div>
+        <div><dt>Accuracy</dt><dd>{{ topic.accuracy|pct }}</dd></div>
+      </dl>
+      <div class="progress-bar"><span style="width: {{ topic.mastery_percent }}%"></span></div>
+      <div class="card-actions">
+        <a class="button small primary" href="{{ url_for('quiz', topic_id=topic.id, mode='all') }}">Study</a>
+        <a class="button small" href="{{ url_for('quiz', topic_id=topic.id, mode='new') }}">New</a>
+        <a class="button small" href="{{ url_for('quiz', topic_id=topic.id, mode='missed') }}">Missed</a>
+      </div>
+    </article>
+  {% endfor %}
+</div>
+{% endblock %}

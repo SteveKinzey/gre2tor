@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+
+# Local app/runtime data
+.env
+instance/
+*.sqlite3
+*.db
+
+# Generated PDF extraction/draft output
+data/extracted/*.json
+data/drafts/*.json
+!data/extracted/.gitkeep
+!data/drafts/.gitkeep
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/

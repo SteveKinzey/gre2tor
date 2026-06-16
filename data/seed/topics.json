@@ -1,0 +1,100 @@
+[
+  {
+    "id": "fractions-decimals",
+    "part": 1,
+    "title": "Fractions & Decimals",
+    "pdf_filename": "Part 01_Fractions & Decimals.pdf",
+    "description": "Fractions, decimals, conversions, operations, and comparisons."
+  },
+  {
+    "id": "algebra",
+    "part": 2,
+    "title": "Algebra",
+    "pdf_filename": "Part 02_Algebra.pdf",
+    "description": "Equations, expressions, inequalities, and algebraic manipulation."
+  },
+  {
+    "id": "exponents-roots",
+    "part": 3,
+    "title": "Exponents & Roots",
+    "pdf_filename": "Part 03_Exponents & Roots.pdf",
+    "description": "Exponent rules, radicals, roots, squares, cubes, and simplification."
+  },
+  {
+    "id": "geometry",
+    "part": 4,
+    "title": "Geometry",
+    "pdf_filename": "Part 04_Geometry.pdf",
+    "description": "Lines, angles, polygons, circles, area, perimeter, and volume."
+  },
+  {
+    "id": "percents",
+    "part": 5,
+    "title": "Percents",
+    "pdf_filename": "Part 05_Percents.pdf",
+    "description": "Percent change, percent of a whole, discounts, markups, and comparisons."
+  },
+  {
+    "id": "algebraic-word-problems",
+    "part": 6,
+    "title": "Algebraic Word Problems",
+    "pdf_filename": "Part 06_Algebraic Word Problems.pdf",
+    "description": "Translating GRE-style text into variables, equations, and organized solution steps."
+  },
+  {
+    "id": "ratios-proportions",
+    "part": 7,
+    "title": "Ratios & Proportions",
+    "pdf_filename": "Part 07_Ratios & Proportions.pdf",
+    "description": "Ratios, direct variation, scaling, and proportional reasoning."
+  },
+  {
+    "id": "rates",
+    "part": 8,
+    "title": "Rates",
+    "pdf_filename": "Part 08_Rates.pdf",
+    "description": "Work rates, distance-rate-time, unit rates, and combined rates."
+  },
+  {
+    "id": "statistics",
+    "part": 9,
+    "title": "Statistics",
+    "pdf_filename": "Part 09_Statistics.pdf",
+    "description": "Mean, median, mode, range, weighted averages, and data summaries."
+  },
+  {
+    "id": "integer-properties",
+    "part": 10,
+    "title": "Integer Properties",
+    "pdf_filename": "Part 10_Integer Properties.pdf",
+    "description": "Divisibility, primes, factors, multiples, remainders, odds, and evens."
+  },
+  {
+    "id": "sequences-functions",
+    "part": 11,
+    "title": "Sequences & Functions",
+    "pdf_filename": "Part 11_Sequences & Functions.pdf",
+    "description": "Patterns, recursive rules, explicit formulas, and function notation."
+  },
+  {
+    "id": "overlapping-sets",
+    "part": 12,
+    "title": "Overlapping Sets",
+    "pdf_filename": "Part 12_Overlapping Sets.pdf",
+    "description": "Venn diagrams, inclusion-exclusion, and group membership counts."
+  },
+  {
+    "id": "combinatorics",
+    "part": 13,
+    "title": "Combinatorics",
+    "pdf_filename": "Part 13_Combinatorics.pdf",
+    "description": "Counting methods, arrangements, selections, and multiplication principle."
+  },
+  {
+    "id": "probability",
+    "part": 14,
+    "title": "Probability",
+    "pdf_filename": "Part 14_Probability.pdf",
+    "description": "Basic probability, complements, independent events, and combined probabilities."
+  }
+]

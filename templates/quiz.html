@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Quiz · GRE2Tor{% endblock %}
+
+{% block content %}
+<section class="section-heading">
+  <div>
+    <p class="eyebrow">Quiz</p>
+    <h1>{% if topic %}{{ topic.title }}{% else %}Study All Topics{% endif %}</h1>
+    <p>Mode: {{ mode|capitalize }} · Limit: {{ limit }}</p>
+  </div>
+  <a class="button" href="{{ url_for('topics') }}">Choose Topic</a>
+</section>
+
+{% if not cards %}
+  <section class="empty-state">
+    <h2>No cards found</h2>
+    <p>No cards match this topic/mode yet.</p>
+    <a class="button" href="{{ url_for('topics') }}">Back to topics</a>
+  </section>
+{% else %}
+  <section class="quiz-shell" data-total="{{ cards|length }}">
+    <div class="quiz-toolbar">
+      <span id="quiz-counter">Card 1 of {{ cards|length }}</span>
+      <div class="progress-bar large"><span id="quiz-progress" style="width: 0%"></span></div>
+    </div>
+
+    {% for card in cards %}
+      <article class="quiz-card{% if loop.first %} active{% endif %}" data-card-id="{{ card.id }}" data-card-type="{{ card.type }}">
+        <div class="card-meta">
+          <span class="badge">{{ card.topic_title }}</span>
+          <span>Difficulty {{ card.difficulty }}</span>
+          <span>Mastery {{ card.mastery }}/3</span>
+        </div>
+        <h2>{{ card.prompt }}</h2>
+
+        {% if card.type == 'multiple_choice' and card.choices %}
+          <fieldset class="choices">
+            <legend>Choose one answer</legend>
+            {% for choice in card.choices %}
+              <label><input type="radio" name="answer-{{ card.id }}" value="{{ choice }}"> {{ choice }}</label>
+            {% endfor %}
+          </fieldset>
+          <button class="button primary submit-answer" type="button">Submit answer</button>
+        {% elif card.type == 'numeric' %}
+          <label class="answer-input">Your answer
+            <input type="text" inputmode="decimal" autocomplete="off" placeholder="Enter a number" data-answer-input>
+          </label>
+          <button class="button primary submit-answer" type="button">Submit answer</button>
+        {% else %}
+          <label class="answer-input">Optional notes
+            <textarea rows="3" placeholder="Work it out, then reveal the answer" data-answer-input></textarea>
+          </label>
+          <button class="button primary reveal-answer" type="button">Reveal answer</button>
+        {% endif %}
+
+        <div class="answer-panel" hidden>
+          <h3>Answer</h3>
+          <p>{{ card.answer }}</p>
+          {% if card.explanation %}
+            <h3>Explanation</h3>
+            <p>{{ card.explanation }}</p>
+          {% endif %}
+        </div>
+
+        <div class="self-grade" hidden>
+          <button class="button primary grade-answer" data-correct="true" type="button">I got it right</button>
+          <button class="button grade-answer" data-correct="false" type="button">I missed it</button>
+        </div>
+
+        <div class="result" role="status" aria-live="polite"></div>
+        <div class="quiz-nav">
+          <button class="button next-card" type="button" hidden>Next card</button>
+        </div>
+      </article>
+    {% endfor %}
+
+    <section class="quiz-complete" hidden>
+      <h2>Quiz complete</h2>
+      <p>Nice work. Keep the loop tight: review misses, then come back to new cards.</p>
+      <div class="hero-actions">
+        <a class="button primary" href="{{ url_for('review') }}">Review Missed</a>
+        <a class="button" href="{{ url_for('quiz', topic_id=topic.id if topic else none, mode='new') }}">More New Cards</a>
+        <a class="button" href="{{ url_for('index') }}">Dashboard</a>
+      </div>
+    </section>
+  </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/quiz.js') }}" defer></script>
+{% endblock %}

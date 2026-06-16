@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · GRE2Tor{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">GRE Math Practice</p>
+    <h1>Build speed and accuracy topic by topic.</h1>
+    <p class="lede">Study concise theory cards, solve practice prompts, and track what needs review.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="button primary" href="{{ url_for('quiz') }}">Study All</a>
+    <a class="button" href="{{ url_for('topics') }}">Choose Topic</a>
+    <a class="button" href="{{ url_for('review') }}">Review Missed</a>
+  </div>
+</section>
+
+<section class="stats-grid" aria-label="Progress summary">
+  <article class="stat-card"><strong>{{ stats.card_count }}</strong><span>Total cards</span></article>
+  <article class="stat-card"><strong>{{ stats.attempted_cards }}</strong><span>Cards attempted</span></article>
+  <article class="stat-card"><strong>{{ stats.accuracy|pct }}</strong><span>Accuracy</span></article>
+  <article class="stat-card"><strong>{{ stats.mastered_cards }}</strong><span>Strong cards</span></article>
+</section>
+
+{% if stats.card_count == 0 %}
+  <section class="empty-state">
+    <h2>No cards loaded yet</h2>
+    <p>Run <code>python scripts/seed_db.py</code> to load the starter cards.</p>
+  </section>
+{% else %}
+  <section class="section-heading">
+    <div>
+      <h2>Topics</h2>
+      <p>Start with new cards, review missed cards, or study the full deck.</p>
+    </div>
+    <a href="{{ url_for('topics') }}">View all topics →</a>
+  </section>
+  <div class="topic-grid compact">
+    {% for topic in topics %}
+      <article class="topic-card">
+        <p class="eyebrow">Part {{ topic.part }}</p>
+        <h3><a href="{{ url_for('topic_detail', topic_id=topic.id) }}">{{ topic.title }}</a></h3>
+        <p>{{ topic.attempted_cards }}/{{ topic.total_cards }} attempted · {{ topic.accuracy|pct }} accuracy</p>
+        <div class="progress-bar" aria-label="{{ topic.mastery_percent }} percent mastered">
+          <span style="width: {{ topic.mastery_percent }}%"></span>
+        </div>
+        <a class="button small" href="{{ url_for('quiz', topic_id=topic.id, mode='all') }}">Study</a>
+      </article>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if recent_attempts %}
+<section class="panel">
+  <h2>Recent attempts</h2>
+  <ul class="attempt-list">
+    {% for attempt in recent_attempts %}
+      <li>
+        <span class="badge {{ 'good' if attempt.is_correct else 'bad' }}">{{ 'Correct' if attempt.is_correct else 'Missed' }}</span>
+        <a href="{{ url_for('card_detail', card_id=attempt.card_id) }}">{{ attempt.prompt }}</a>
+        <small>{{ attempt.topic_title }}</small>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}
