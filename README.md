@@ -91,8 +91,8 @@ The launcher creates a local Python environment, installs dependencies, seeds th
 After starting GRE2Tor on your computer, the terminal prints two URLs:
 
 ```text
-Open on this computer: http://127.0.0.1:5000
-Open on a phone/tablet on the same Wi-Fi: http://YOUR-COMPUTER-IP:5000
+Open on this computer: http://127.0.0.1:8765
+Open on a phone/tablet on the same Wi-Fi: http://YOUR-COMPUTER-IP:8765
 ```
 
 On your phone or tablet, connect to the same Wi-Fi network and open the second URL in Safari, Chrome, or another browser.
@@ -102,6 +102,18 @@ Notes:
 - The computer must stay awake while you study from a phone.
 - Some firewalls may ask whether Python can accept local network connections. Allow it for private/local networks.
 - This is not yet a packaged native iOS/Android app; mobile use is through the browser.
+
+### Troubleshooting: `127.0.0.1` denied or HTTP 403
+
+If your browser shows `Access to 127.0.0.1 was denied` or `HTTP ERROR 403`, you are probably opening the wrong local service. On macOS, port `5000` is often used by AirPlay Receiver.
+
+Use the exact URL printed by GRE2Tor. Current releases use:
+
+```text
+http://127.0.0.1:8765
+```
+
+If you must choose another port, start GRE2Tor with `GRE2TOR_PORT` set to an unused value.
 
 ## Manual setup
 
@@ -120,7 +132,7 @@ python scripts/run_local.py
 Then open:
 
 ```text
-http://127.0.0.1:5000
+http://127.0.0.1:8765
 ```
 
 The default SQLite database is:

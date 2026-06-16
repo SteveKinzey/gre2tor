@@ -26,7 +26,7 @@ def _local_ip() -> str | None:
 
 def main() -> None:
     host = os.environ.get("GRE2TOR_HOST", "0.0.0.0")
-    port = int(os.environ.get("GRE2TOR_PORT", "5000"))
+    port = int(os.environ.get("GRE2TOR_PORT", "8765"))
     settings = load_settings()
 
     settings.INSTANCE_PATH.mkdir(parents=True, exist_ok=True)
