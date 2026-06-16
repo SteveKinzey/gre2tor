@@ -45,7 +45,47 @@ static/                    CSS and JavaScript
 tests/                     Pytest suite
 ```
 
-## Quick start
+## Download and run
+
+GRE2Tor is a local web app. You run it on a Mac or Windows computer, then use it in a browser. A phone or tablet can use it too if it is on the same Wi-Fi network as the computer running the app.
+
+### macOS
+
+1. Download or clone this repo.
+2. Open the folder in Finder.
+3. Double-click `Start GRE2Tor.command`.
+4. If macOS blocks the file because it came from the internet, right-click it, choose **Open**, then confirm.
+
+The launcher creates a local Python environment, installs dependencies, seeds the flashcards, starts the app, and opens your browser.
+
+### Windows
+
+1. Download or clone this repo.
+2. Open the folder in File Explorer.
+3. Double-click `Start GRE2Tor.bat`.
+
+The launcher creates a local Python environment, installs dependencies, seeds the flashcards, starts the app, and opens your browser.
+
+### Phone or tablet access
+
+After starting GRE2Tor on your computer, the terminal prints two URLs:
+
+```text
+Open on this computer: http://127.0.0.1:5000
+Open on a phone/tablet on the same Wi-Fi: http://YOUR-COMPUTER-IP:5000
+```
+
+On your phone or tablet, connect to the same Wi-Fi network and open the second URL in Safari, Chrome, or another browser.
+
+Notes:
+
+- The computer must stay awake while you study from a phone.
+- Some firewalls may ask whether Python can accept local network connections. Allow it for private/local networks.
+- This is not yet a packaged native iOS/Android app; mobile use is through the browser.
+
+## Manual setup
+
+Use this if you prefer running commands yourself.
 
 ```bash
 python3 -m venv venv
@@ -54,7 +94,7 @@ pip install -r requirements.txt
 cp .env.example .env
 python scripts/init_db.py
 python scripts/seed_db.py
-python app.py
+python scripts/run_local.py
 ```
 
 Then open:
@@ -102,7 +142,13 @@ Load or refresh seed topics/cards:
 python scripts/seed_db.py
 ```
 
-Run the app:
+Run the app for local/network browser access:
+
+```bash
+python scripts/run_local.py
+```
+
+Run the Flask entrypoint directly for development:
 
 ```bash
 python app.py
