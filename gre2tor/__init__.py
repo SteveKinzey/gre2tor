@@ -57,9 +57,14 @@ def create_app(config_override: dict | None = None):
 
     @app.context_processor
     def inject_app_metadata():
+        public_scheme = request.headers.get("X-Forwarded-Proto", request.scheme)
+        public_host = request.headers.get("X-Forwarded-Host", request.host)
+        public_base_url = f"{public_scheme}://{public_host}"
         return {
             "app_version": APP_VERSION,
+            "canonical_url": public_base_url,
             "current_user_email": session.get("user_email"),
+            "og_image_url": f"{public_base_url}{url_for('static', filename='site/og-image.png')}",
             "update_info": check_for_updates(),
         }
 

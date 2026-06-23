@@ -4,6 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}GRE2Tor{% endblock %}</title>
+  <meta name="description" content="GRE2Tor helps students practice GRE math with flashcards, quizzes, review, and progress tracking.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="GRE2Tor">
+  <meta property="og:title" content="GRE2Tor · GRE Math Practice">
+  <meta property="og:description" content="Flashcards, quizzes, and review for GRE math mastery.">
+  <meta property="og:url" content="{{ canonical_url }}">
+  <meta property="og:image" content="{{ og_image_url }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="GRE2Tor GRE Math Practice">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="GRE2Tor · GRE Math Practice">
+  <meta name="twitter:description" content="Flashcards, quizzes, and review for GRE math mastery.">
+  <meta name="twitter:image" content="{{ og_image_url }}">
+  <link rel="icon" href="{{ url_for('static', filename='site/favicon.ico') }}" sizes="any">
+  <link rel="icon" href="{{ url_for('static', filename='site/favicon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='site/apple-touch-icon.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body>
