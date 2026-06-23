@@ -13,6 +13,7 @@ from .db import (
     list_topic_stats,
 )
 from .quiz import record_card_attempt, select_cards
+from .seed import upsert_seed_data
 from .updates import check_for_updates
 from .version import APP_VERSION
 
@@ -34,6 +35,7 @@ def create_app(config_override: dict | None = None):
 
     settings.INSTANCE_PATH.mkdir(parents=True, exist_ok=True)
     init_db(settings.DATABASE_PATH)
+    upsert_seed_data(database_path=settings.DATABASE_PATH)
 
     @app.template_filter("pct")
     def pct(value):

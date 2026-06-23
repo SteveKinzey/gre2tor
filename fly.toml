@@ -10,9 +10,6 @@ primary_region = "ord"
   FLASK_DEBUG = "0"
   GRE2TOR_DISABLE_UPDATE_CHECK = "1"
 
-[deploy]
-  release_command = "python scripts/seed_db.py"
-
 [[mounts]]
   source = "gre2tor_data"
   destination = "/data"
