@@ -1,0 +1,14 @@
+venv/
+.venv/
+__pycache__/
+.pytest_cache/
+.git/
+.env
+instance/
+build/
+dist/
+data/extracted/*.json
+data/drafts/*.json
+*.sqlite3
+*.db
+.DS_Store

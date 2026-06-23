@@ -302,6 +302,37 @@ There are more `Answer:` markers in the PDFs than promoted cards. Those remainin
 - Do not commit local SQLite databases under `instance/`.
 - Treat any future user progress, private notes, or source documents as local/private data.
 
+## Deploying to Fly.io
+
+GRE2Tor can also run as a hosted web app on Fly.io.
+
+Prerequisites:
+
+- Fly CLI installed.
+- Logged in with `fly auth login`.
+- App name configured in `fly.toml`.
+
+Deploy:
+
+```bash
+fly deploy
+```
+
+The Fly deployment uses:
+
+- `Dockerfile` for the Python/Gunicorn container.
+- `fly.toml` for app, region, HTTP service, and volume settings.
+- A persistent `/data` volume for SQLite.
+- `python scripts/seed_db.py` as the release command so seed cards are loaded on deploy.
+
+Production environment defaults:
+
+```text
+DATABASE_PATH=/data/gre2tor.sqlite3
+INSTANCE_PATH=/data
+GRE2TOR_DISABLE_UPDATE_CHECK=1
+```
+
 ## Building release packages
 
 Release packages are built with PyInstaller.

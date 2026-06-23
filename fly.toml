@@ -1,0 +1,31 @@
+app = "gre2tor"
+primary_region = "ord"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  DATABASE_PATH = "/data/gre2tor.sqlite3"
+  INSTANCE_PATH = "/data"
+  FLASK_DEBUG = "0"
+  GRE2TOR_DISABLE_UPDATE_CHECK = "1"
+
+[deploy]
+  release_command = "python scripts/seed_db.py"
+
+[[mounts]]
+  source = "gre2tor_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
