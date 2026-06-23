@@ -76,11 +76,9 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_cards_topic_id ON cards(topic_id);
-CREATE INDEX IF NOT EXISTS idx_attempts_user_email ON attempts(user_email);
 CREATE INDEX IF NOT EXISTS idx_attempts_card_id ON attempts(card_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_topic_id ON attempts(topic_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_created_at ON attempts(created_at);
-CREATE INDEX IF NOT EXISTS idx_card_progress_user_email ON card_progress(user_email);
 CREATE INDEX IF NOT EXISTS idx_card_progress_next_review ON card_progress(next_review_at);
 """
 
@@ -139,6 +137,9 @@ def _migrate_attempts_table(conn: sqlite3.Connection) -> None:
     if "user_email" not in _column_names(conn, "attempts"):
         conn.execute("ALTER TABLE attempts ADD COLUMN user_email TEXT NOT NULL DEFAULT ''")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_attempts_user_email ON attempts(user_email)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_attempts_card_id ON attempts(card_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_attempts_topic_id ON attempts(topic_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_attempts_created_at ON attempts(created_at)")
 
 
 def _migrate_card_progress_table(conn: sqlite3.Connection) -> None:
@@ -147,6 +148,7 @@ def _migrate_card_progress_table(conn: sqlite3.Connection) -> None:
     pk_columns = [str(row["name"]) for row in sorted(pk_rows, key=lambda row: int(row["pk"])) if int(row["pk"])]
     if "user_email" in columns and pk_columns == ["user_email", "card_id"]:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_card_progress_user_email ON card_progress(user_email)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_card_progress_next_review ON card_progress(next_review_at)")
         return
 
     conn.execute("ALTER TABLE card_progress RENAME TO card_progress_legacy")
@@ -182,6 +184,8 @@ def _migrate_card_progress_table(conn: sqlite3.Connection) -> None:
     )
     conn.execute("DROP TABLE card_progress_legacy")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_card_progress_user_email ON card_progress(user_email)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_card_progress_next_review ON card_progress(next_review_at)")
+
 
 def init_db(database_path: str | Path) -> None:
     with connection(database_path) as conn:
