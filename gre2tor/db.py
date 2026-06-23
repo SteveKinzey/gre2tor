@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS cards (
 
 CREATE TABLE IF NOT EXISTS attempts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT NOT NULL DEFAULT '',
     card_id TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
     topic_id TEXT NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
     user_answer TEXT,
@@ -55,7 +56,8 @@ CREATE TABLE IF NOT EXISTS attempts (
 );
 
 CREATE TABLE IF NOT EXISTS card_progress (
-    card_id TEXT PRIMARY KEY REFERENCES cards(id) ON DELETE CASCADE,
+    user_email TEXT NOT NULL DEFAULT '',
+    card_id TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
     seen_count INTEGER NOT NULL DEFAULT 0,
     correct_count INTEGER NOT NULL DEFAULT 0,
     incorrect_count INTEGER NOT NULL DEFAULT 0,
@@ -63,7 +65,8 @@ CREATE TABLE IF NOT EXISTS card_progress (
     last_seen_at TEXT,
     next_review_at TEXT,
     mastery INTEGER NOT NULL DEFAULT 0 CHECK (mastery BETWEEN 0 AND 3),
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (user_email, card_id)
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -73,9 +76,11 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_cards_topic_id ON cards(topic_id);
+CREATE INDEX IF NOT EXISTS idx_attempts_user_email ON attempts(user_email);
 CREATE INDEX IF NOT EXISTS idx_attempts_card_id ON attempts(card_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_topic_id ON attempts(topic_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_created_at ON attempts(created_at);
+CREATE INDEX IF NOT EXISTS idx_card_progress_user_email ON card_progress(user_email);
 CREATE INDEX IF NOT EXISTS idx_card_progress_next_review ON card_progress(next_review_at);
 """
 
@@ -129,10 +134,61 @@ def _migrate_cards_table(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_cards_concept_id ON cards(concept_id)")
 
 
+
+def _migrate_attempts_table(conn: sqlite3.Connection) -> None:
+    if "user_email" not in _column_names(conn, "attempts"):
+        conn.execute("ALTER TABLE attempts ADD COLUMN user_email TEXT NOT NULL DEFAULT ''")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_attempts_user_email ON attempts(user_email)")
+
+
+def _migrate_card_progress_table(conn: sqlite3.Connection) -> None:
+    columns = _column_names(conn, "card_progress")
+    pk_rows = conn.execute("PRAGMA table_info(card_progress)").fetchall()
+    pk_columns = [str(row["name"]) for row in sorted(pk_rows, key=lambda row: int(row["pk"])) if int(row["pk"])]
+    if "user_email" in columns and pk_columns == ["user_email", "card_id"]:
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_card_progress_user_email ON card_progress(user_email)")
+        return
+
+    conn.execute("ALTER TABLE card_progress RENAME TO card_progress_legacy")
+    conn.execute(
+        """
+        CREATE TABLE card_progress (
+            user_email TEXT NOT NULL DEFAULT '',
+            card_id TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+            seen_count INTEGER NOT NULL DEFAULT 0,
+            correct_count INTEGER NOT NULL DEFAULT 0,
+            incorrect_count INTEGER NOT NULL DEFAULT 0,
+            streak INTEGER NOT NULL DEFAULT 0,
+            last_seen_at TEXT,
+            next_review_at TEXT,
+            mastery INTEGER NOT NULL DEFAULT 0 CHECK (mastery BETWEEN 0 AND 3),
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (user_email, card_id)
+        )
+        """
+    )
+    legacy_columns = _column_names(conn, "card_progress_legacy")
+    user_expr = "COALESCE(user_email, '')" if "user_email" in legacy_columns else "''"
+    conn.execute(
+        f"""
+        INSERT INTO card_progress (
+            user_email, card_id, seen_count, correct_count, incorrect_count, streak,
+            last_seen_at, next_review_at, mastery, updated_at
+        )
+        SELECT {user_expr}, card_id, seen_count, correct_count, incorrect_count, streak,
+            last_seen_at, next_review_at, mastery, updated_at
+        FROM card_progress_legacy
+        """
+    )
+    conn.execute("DROP TABLE card_progress_legacy")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_card_progress_user_email ON card_progress(user_email)")
+
 def init_db(database_path: str | Path) -> None:
     with connection(database_path) as conn:
         conn.executescript(SCHEMA_SQL)
         _migrate_cards_table(conn)
+        _migrate_attempts_table(conn)
+        _migrate_card_progress_table(conn)
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
@@ -277,16 +333,18 @@ def list_cards(conn: sqlite3.Connection, topic_id: str | None = None) -> list[di
     return [_decode_card_row(row) for row in rows if row is not None]
 
 
-def get_card_progress(conn: sqlite3.Connection, card_id: str) -> dict | None:
-    return row_to_dict(conn.execute("SELECT * FROM card_progress WHERE card_id = ?", (card_id,)).fetchone())
+def get_card_progress(conn: sqlite3.Connection, card_id: str, user_email: str = "") -> dict | None:
+    return row_to_dict(
+        conn.execute("SELECT * FROM card_progress WHERE user_email = ? AND card_id = ?", (user_email, card_id)).fetchone()
+    )
 
 
-def list_cards_with_progress(conn: sqlite3.Connection, topic_id: str | None = None) -> list[dict]:
-    params: tuple = ()
+def list_cards_with_progress(conn: sqlite3.Connection, topic_id: str | None = None, user_email: str = "") -> list[dict]:
+    params: list[object] = [user_email]
     where = ""
     if topic_id:
         where = "WHERE c.topic_id = ?"
-        params = (topic_id,)
+        params.append(topic_id)
 
     rows = conn.execute(
         f"""
@@ -303,7 +361,7 @@ def list_cards_with_progress(conn: sqlite3.Connection, topic_id: str | None = No
             COALESCE(p.mastery, 0) AS mastery
         FROM cards c
         JOIN topics t ON t.id = c.topic_id
-        LEFT JOIN card_progress p ON p.card_id = c.id
+        LEFT JOIN card_progress p ON p.card_id = c.id AND p.user_email = ?
         {where}
         ORDER BY t.part, c.difficulty, c.id
         """,
@@ -320,18 +378,19 @@ def record_attempt(
     user_answer: str | None,
     is_correct: bool,
     elapsed_ms: int | None = None,
+    user_email: str = "",
 ) -> int:
     cursor = conn.execute(
         """
-        INSERT INTO attempts (card_id, topic_id, user_answer, is_correct, elapsed_ms, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO attempts (user_email, card_id, topic_id, user_answer, is_correct, elapsed_ms, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (card_id, topic_id, user_answer, 1 if is_correct else 0, elapsed_ms, utc_now()),
+        (user_email, card_id, topic_id, user_answer, 1 if is_correct else 0, elapsed_ms, utc_now()),
     )
     return int(cursor.lastrowid)
 
 
-def list_attempts(conn: sqlite3.Connection, card_id: str | None = None, limit: int = 25) -> list[dict]:
+def list_attempts(conn: sqlite3.Connection, card_id: str | None = None, limit: int = 25, user_email: str = "") -> list[dict]:
     limit = max(1, min(int(limit), 100))
     if card_id:
         rows = conn.execute(
@@ -340,11 +399,11 @@ def list_attempts(conn: sqlite3.Connection, card_id: str | None = None, limit: i
             FROM attempts a
             JOIN cards c ON c.id = a.card_id
             JOIN topics t ON t.id = a.topic_id
-            WHERE a.card_id = ?
+            WHERE a.user_email = ? AND a.card_id = ?
             ORDER BY a.created_at DESC, a.id DESC
             LIMIT ?
             """,
-            (card_id, limit),
+            (user_email, card_id, limit),
         ).fetchall()
     else:
         rows = conn.execute(
@@ -353,26 +412,28 @@ def list_attempts(conn: sqlite3.Connection, card_id: str | None = None, limit: i
             FROM attempts a
             JOIN cards c ON c.id = a.card_id
             JOIN topics t ON t.id = a.topic_id
+            WHERE a.user_email = ?
             ORDER BY a.created_at DESC, a.id DESC
             LIMIT ?
             """,
-            (limit,),
+            (user_email, limit),
         ).fetchall()
     return [dict(row) for row in rows]
 
 
-def get_overall_progress(conn: sqlite3.Connection) -> dict:
+def get_overall_progress(conn: sqlite3.Connection, user_email: str = "") -> dict:
     row = conn.execute(
         """
         SELECT
             (SELECT COUNT(*) FROM topics) AS topic_count,
             (SELECT COUNT(*) FROM cards) AS card_count,
-            (SELECT COUNT(*) FROM attempts) AS attempt_count,
-            (SELECT COUNT(*) FROM card_progress WHERE seen_count > 0) AS attempted_cards,
-            COALESCE((SELECT SUM(correct_count) FROM card_progress), 0) AS correct_count,
-            COALESCE((SELECT SUM(incorrect_count) FROM card_progress), 0) AS incorrect_count,
-            (SELECT COUNT(*) FROM card_progress WHERE mastery >= 3) AS mastered_cards
-        """
+            (SELECT COUNT(*) FROM attempts WHERE user_email = ?) AS attempt_count,
+            (SELECT COUNT(*) FROM card_progress WHERE user_email = ? AND seen_count > 0) AS attempted_cards,
+            COALESCE((SELECT SUM(correct_count) FROM card_progress WHERE user_email = ?), 0) AS correct_count,
+            COALESCE((SELECT SUM(incorrect_count) FROM card_progress WHERE user_email = ?), 0) AS incorrect_count,
+            (SELECT COUNT(*) FROM card_progress WHERE user_email = ? AND mastery >= 3) AS mastered_cards
+        """,
+        (user_email, user_email, user_email, user_email, user_email),
     ).fetchone()
     stats = dict(row)
     stats["accuracy"] = _accuracy(int(stats["correct_count"]), int(stats["attempt_count"]))
@@ -387,7 +448,7 @@ def _decorate_topic_stats(topic: dict) -> dict:
     return topic
 
 
-def list_topic_stats(conn: sqlite3.Connection) -> list[dict]:
+def list_topic_stats(conn: sqlite3.Connection, user_email: str = "") -> list[dict]:
     rows = conn.execute(
         """
         SELECT
@@ -400,15 +461,16 @@ def list_topic_stats(conn: sqlite3.Connection) -> list[dict]:
             COALESCE(SUM(p.incorrect_count), 0) AS incorrect_count
         FROM topics t
         LEFT JOIN cards c ON c.topic_id = t.id
-        LEFT JOIN card_progress p ON p.card_id = c.id
+        LEFT JOIN card_progress p ON p.card_id = c.id AND p.user_email = ?
         GROUP BY t.id
         ORDER BY t.part, t.title
-        """
+        """,
+        (user_email,),
     ).fetchall()
     return [_decorate_topic_stats(dict(row)) for row in rows]
 
 
-def get_topic_stats(conn: sqlite3.Connection, topic_id: str) -> dict | None:
+def get_topic_stats(conn: sqlite3.Connection, topic_id: str, user_email: str = "") -> dict | None:
     row = conn.execute(
         """
         SELECT
@@ -421,16 +483,16 @@ def get_topic_stats(conn: sqlite3.Connection, topic_id: str) -> dict | None:
             COALESCE(SUM(p.incorrect_count), 0) AS incorrect_count
         FROM topics t
         LEFT JOIN cards c ON c.topic_id = t.id
-        LEFT JOIN card_progress p ON p.card_id = c.id
+        LEFT JOIN card_progress p ON p.card_id = c.id AND p.user_email = ?
         WHERE t.id = ?
         GROUP BY t.id
         """,
-        (topic_id,),
+        (user_email, topic_id),
     ).fetchone()
     return _decorate_topic_stats(dict(row)) if row else None
 
 
-def list_review_cards(conn: sqlite3.Connection, limit: int = 50) -> list[dict]:
+def list_review_cards(conn: sqlite3.Connection, limit: int = 50, user_email: str = "") -> list[dict]:
     limit = max(1, min(int(limit), 100))
     rows = conn.execute(
         """
@@ -447,12 +509,12 @@ def list_review_cards(conn: sqlite3.Connection, limit: int = 50) -> list[dict]:
             p.mastery
         FROM cards c
         JOIN topics t ON t.id = c.topic_id
-        JOIN card_progress p ON p.card_id = c.id
+        JOIN card_progress p ON p.card_id = c.id AND p.user_email = ?
         WHERE p.seen_count > 0 AND (p.mastery < 3 OR p.next_review_at <= ?)
         ORDER BY p.incorrect_count DESC, p.mastery ASC, p.last_seen_at ASC
         LIMIT ?
         """,
-        (utc_now(), limit),
+        (user_email, utc_now(), limit),
     ).fetchall()
     return [_decode_card_row(row) for row in rows if row is not None]
 
@@ -466,3 +528,9 @@ def get_summary_stats(database_path: str | Path) -> dict:
         "card_count": progress["card_count"],
         "attempt_count": progress["attempt_count"],
     }
+
+
+def reset_user_progress(conn: sqlite3.Connection, user_email: str) -> dict:
+    attempts_deleted = conn.execute("DELETE FROM attempts WHERE user_email = ?", (user_email,)).rowcount
+    progress_deleted = conn.execute("DELETE FROM card_progress WHERE user_email = ?", (user_email,)).rowcount
+    return {"attempts_deleted": attempts_deleted, "progress_deleted": progress_deleted}

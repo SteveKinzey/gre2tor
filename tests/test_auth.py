@@ -63,3 +63,28 @@ def test_allowed_email_restriction(tmp_path, monkeypatch):
 
     assert b"not allowed" in denied.data
     assert b"Check your email" in allowed.data
+
+
+def test_reset_clears_only_current_user_progress(tmp_path, monkeypatch):
+    monkeypatch.setenv("GRE2TOR_DISABLE_UPDATE_CHECK", "1")
+    app = _app(tmp_path)
+
+    first = app.test_client()
+    response = first.post("/login", data={"email": "first@example.com"})
+    first.get(_extract_dev_magic_link(response.get_data(as_text=True)))
+    first.post("/api/attempts", json={"card_id": "fractions-decimals-add-unlike-denominators", "user_answer": "3/2"})
+
+    second = app.test_client()
+    response = second.post("/login", data={"email": "second@example.com"})
+    second.get(_extract_dev_magic_link(response.get_data(as_text=True)))
+    second.post("/api/attempts", json={"card_id": "fractions-decimals-add-unlike-denominators", "user_answer": "3/2"})
+
+    assert b"1</strong><span>Cards attempted" in first.get("/").data
+    assert b"1</strong><span>Cards attempted" in second.get("/").data
+
+    first.post("/reset-progress", data={"confirmation": "reset"})
+    assert b"1</strong><span>Cards attempted" in first.get("/").data
+
+    first.post("/reset-progress", data={"confirmation": "RESET"})
+    assert b"0</strong><span>Cards attempted" in first.get("/").data
+    assert b"1</strong><span>Cards attempted" in second.get("/").data

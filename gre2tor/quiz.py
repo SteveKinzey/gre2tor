@@ -45,11 +45,12 @@ def select_cards(
     topic_id: str | None = None,
     mode: str = "all",
     limit: int | str | None = 10,
+    user_email: str = "",
 ) -> list[dict]:
     mode = mode if mode in {"all", "new", "missed", "review"} else "all"
     limit_value = _clamp_limit(limit)
     clauses = []
-    params: list[object] = []
+    params: list[object] = [user_email]
 
     if topic_id:
         clauses.append("c.topic_id = ?")
@@ -82,7 +83,7 @@ def select_cards(
             COALESCE(p.mastery, 0) AS mastery
         FROM cards c
         JOIN topics t ON t.id = c.topic_id
-        LEFT JOIN card_progress p ON p.card_id = c.id
+        LEFT JOIN card_progress p ON p.card_id = c.id AND p.user_email = ?
         {where}
         ORDER BY COALESCE(p.mastery, 0), COALESCE(p.seen_count, 0), t.part, c.difficulty, c.id
         LIMIT ?
@@ -108,8 +109,8 @@ def _next_review_at(mastery: int, is_correct: bool) -> str:
     return (now + REVIEW_INTERVALS.get(mastery, timedelta(days=1))).isoformat()
 
 
-def update_progress(conn: sqlite3.Connection, *, card_id: str, is_correct: bool) -> dict:
-    current = get_card_progress(conn, card_id) or {
+def update_progress(conn: sqlite3.Connection, *, card_id: str, is_correct: bool, user_email: str = "") -> dict:
+    current = get_card_progress(conn, card_id, user_email=user_email) or {
         "seen_count": 0,
         "correct_count": 0,
         "incorrect_count": 0,
@@ -129,11 +130,11 @@ def update_progress(conn: sqlite3.Connection, *, card_id: str, is_correct: bool)
     conn.execute(
         """
         INSERT INTO card_progress (
-            card_id, seen_count, correct_count, incorrect_count, streak,
+            user_email, card_id, seen_count, correct_count, incorrect_count, streak,
             last_seen_at, next_review_at, mastery, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(card_id) DO UPDATE SET
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_email, card_id) DO UPDATE SET
             seen_count = excluded.seen_count,
             correct_count = excluded.correct_count,
             incorrect_count = excluded.incorrect_count,
@@ -143,7 +144,7 @@ def update_progress(conn: sqlite3.Connection, *, card_id: str, is_correct: bool)
             mastery = excluded.mastery,
             updated_at = excluded.updated_at
         """,
-        (card_id, seen_count, correct_count, incorrect_count, streak, now, next_review_at, mastery, now),
+        (user_email, card_id, seen_count, correct_count, incorrect_count, streak, now, next_review_at, mastery, now),
     )
 
     return {
@@ -165,6 +166,7 @@ def record_card_attempt(
     user_answer: str | None,
     elapsed_ms: int | None = None,
     self_grade: bool | None = None,
+    user_email: str = "",
 ) -> dict:
     card = get_card(conn, card_id)
     if card is None:
@@ -178,8 +180,9 @@ def record_card_attempt(
         user_answer=user_answer,
         is_correct=is_correct,
         elapsed_ms=elapsed_ms,
+        user_email=user_email,
     )
-    progress = update_progress(conn, card_id=card["id"], is_correct=is_correct)
+    progress = update_progress(conn, card_id=card["id"], is_correct=is_correct, user_email=user_email)
 
     return {
         "attempt_id": attempt_id,

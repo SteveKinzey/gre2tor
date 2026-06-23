@@ -22,6 +22,7 @@ from .db import (
     list_cards_with_progress,
     list_review_cards,
     list_topic_stats,
+    reset_user_progress,
 )
 from .quiz import record_card_attempt, select_cards
 from .seed import upsert_seed_data
@@ -125,6 +126,15 @@ def create_app(config_override: dict | None = None):
         session["user_email"] = email
         return redirect(_safe_next(request.args.get("next")))
 
+    @app.post("/reset-progress")
+    def reset_progress():
+        confirmation = request.form.get("confirmation")
+        if confirmation != "RESET":
+            return redirect(url_for("index"))
+        with connection(settings.DATABASE_PATH) as conn:
+            reset_user_progress(conn, session["user_email"])
+        return redirect(url_for("index"))
+
     @app.post("/logout")
     def logout():
         session.clear()
@@ -132,25 +142,27 @@ def create_app(config_override: dict | None = None):
 
     @app.get("/")
     def index():
+        user_email = session["user_email"]
         with connection(settings.DATABASE_PATH) as conn:
-            stats = get_overall_progress(conn)
-            topics = list_topic_stats(conn)
-            recent_attempts = list_attempts(conn, limit=5)
+            stats = get_overall_progress(conn, user_email=user_email)
+            topics = list_topic_stats(conn, user_email=user_email)
+            recent_attempts = list_attempts(conn, limit=5, user_email=user_email)
         return render_template("index.html", stats=stats, topics=topics, recent_attempts=recent_attempts)
 
     @app.get("/topics")
     def topics():
         with connection(settings.DATABASE_PATH) as conn:
-            topic_stats = list_topic_stats(conn)
+            topic_stats = list_topic_stats(conn, user_email=session["user_email"])
         return render_template("topics.html", topics=topic_stats)
 
     @app.get("/topics/<topic_id>")
     def topic_detail(topic_id: str):
         with connection(settings.DATABASE_PATH) as conn:
-            topic = get_topic_stats(conn, topic_id)
+            user_email = session["user_email"]
+            topic = get_topic_stats(conn, topic_id, user_email=user_email)
             if topic is None:
                 abort(404)
-            cards = list_cards_with_progress(conn, topic_id=topic_id)
+            cards = list_cards_with_progress(conn, topic_id=topic_id, user_email=user_email)
         return render_template("topic_detail.html", topic=topic, cards=cards)
 
     @app.get("/quiz")
@@ -159,8 +171,9 @@ def create_app(config_override: dict | None = None):
         mode = request.args.get("mode", "all")
         limit = request.args.get("limit", 10)
         with connection(settings.DATABASE_PATH) as conn:
-            cards = select_cards(conn, topic_id=topic_id, mode=mode, limit=limit)
-            topic = get_topic_stats(conn, topic_id) if topic_id else None
+            user_email = session["user_email"]
+            cards = select_cards(conn, topic_id=topic_id, mode=mode, limit=limit, user_email=user_email)
+            topic = get_topic_stats(conn, topic_id, user_email=user_email) if topic_id else None
         return render_template("quiz.html", cards=cards, topic=topic, mode=mode, limit=limit)
 
     @app.post("/api/attempts")
@@ -188,6 +201,7 @@ def create_app(config_override: dict | None = None):
                     user_answer=payload.get("user_answer"),
                     elapsed_ms=elapsed_ms,
                     self_grade=self_grade,
+                    user_email=session["user_email"],
                 )
         except ValueError:
             return jsonify({"error": "Card not found"}), 404
@@ -197,7 +211,7 @@ def create_app(config_override: dict | None = None):
     @app.get("/review")
     def review():
         with connection(settings.DATABASE_PATH) as conn:
-            cards = list_review_cards(conn)
+            cards = list_review_cards(conn, user_email=session["user_email"])
         return render_template("review.html", cards=cards)
 
     @app.get("/cards/<card_id>")
@@ -206,9 +220,10 @@ def create_app(config_override: dict | None = None):
             card = get_card(conn, card_id)
             if card is None:
                 abort(404)
-            cards_with_progress = list_cards_with_progress(conn, topic_id=card["topic_id"])
+            user_email = session["user_email"]
+            cards_with_progress = list_cards_with_progress(conn, topic_id=card["topic_id"], user_email=user_email)
             progress_card = next((item for item in cards_with_progress if item["id"] == card_id), card)
-            attempts = list_attempts(conn, card_id=card_id, limit=20)
+            attempts = list_attempts(conn, card_id=card_id, limit=20, user_email=user_email)
         return render_template("card_detail.html", card=progress_card, attempts=attempts)
 
     @app.get("/health")

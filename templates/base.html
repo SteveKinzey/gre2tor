@@ -15,6 +15,10 @@
           <a href="{{ url_for('topics') }}">Topics</a>
           <a href="{{ url_for('quiz') }}">Study All</a>
           <a href="{{ url_for('review') }}">Review</a>
+          <form method="post" action="{{ url_for('reset_progress') }}" class="logout-form reset-form">
+            <input type="hidden" name="confirmation" value="">
+            <button type="submit">Reset</button>
+          </form>
           <form method="post" action="{{ url_for('logout') }}" class="logout-form">
             <button type="submit">Logout</button>
           </form>
@@ -41,6 +45,18 @@
   <footer class="wrap footer">
     <span>Local GRE math flashcards. Progress is stored in SQLite. Version {{ app_version }}.</span>
   </footer>
+  <script>
+    document.querySelectorAll('.reset-form').forEach((form) => {
+      form.addEventListener('submit', (event) => {
+        const value = window.prompt('This will permanently reset your GRE2Tor progress. Type RESET to confirm.');
+        if (value !== 'RESET') {
+          event.preventDefault();
+          return;
+        }
+        form.querySelector('input[name="confirmation"]').value = value;
+      });
+    });
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
