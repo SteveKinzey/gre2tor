@@ -11,9 +11,16 @@
     <nav class="nav wrap" aria-label="Primary navigation">
       <a class="brand" href="{{ url_for('index') }}">GRE2Tor</a>
       <div class="nav-links">
-        <a href="{{ url_for('topics') }}">Topics</a>
-        <a href="{{ url_for('quiz') }}">Study All</a>
-        <a href="{{ url_for('review') }}">Review</a>
+        {% if current_user_email %}
+          <a href="{{ url_for('topics') }}">Topics</a>
+          <a href="{{ url_for('quiz') }}">Study All</a>
+          <a href="{{ url_for('review') }}">Review</a>
+          <form method="post" action="{{ url_for('logout') }}" class="logout-form">
+            <button type="submit">Logout</button>
+          </form>
+        {% else %}
+          <a href="{{ url_for('login') }}">Login</a>
+        {% endif %}
       </div>
     </nav>
   </header>

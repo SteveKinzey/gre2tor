@@ -333,6 +333,29 @@ INSTANCE_PATH=/data
 GRE2TOR_DISABLE_UPDATE_CHECK=1
 ```
 
+### Magic-link login
+
+GRE2Tor requires users to sign in by email magic link. Configure SMTP before deploying auth to production:
+
+```bash
+fly secrets set \
+  SMTP_HOST="smtp.example.com" \
+  SMTP_PORT="587" \
+  SMTP_USERNAME="your-smtp-username" \
+  SMTP_PASSWORD="your-smtp-password" \
+  SMTP_FROM="GRE2Tor <no-reply@example.com>" \
+  SMTP_USE_TLS="1" \
+  AUTH_ALLOWED_EMAILS=""
+```
+
+`AUTH_ALLOWED_EMAILS` is optional. Leave it empty to allow any email address, or set a comma-separated allowlist:
+
+```bash
+fly secrets set AUTH_ALLOWED_EMAILS="you@example.com,student@example.com"
+```
+
+For local development only, you can set `AUTH_ALLOW_DEV_MAGIC_LINK=1` to show the generated magic link on the login page instead of sending email. Do not enable that on the public Fly app.
+
 ## Building release packages
 
 Release packages are built with PyInstaller.

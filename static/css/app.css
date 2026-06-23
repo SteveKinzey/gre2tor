@@ -25,7 +25,10 @@ a:hover { text-decoration: underline; }
 .site-header { background: rgba(255,255,255,.92); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(10px); }
 .nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
 .brand { font-weight: 800; font-size: 1.2rem; color: var(--ink); }
-.nav-links { display: flex; gap: 18px; }
+.nav-links { display: flex; gap: 18px; align-items: center; }
+.logout-form { margin: 0; }
+.logout-form button { background: transparent; border: 0; color: var(--green-dark); cursor: pointer; font: inherit; padding: 0; }
+.logout-form button:hover { text-decoration: underline; }
 .main { padding: 32px 0 56px; }
 .footer { color: var(--muted); border-top: 1px solid var(--line); padding: 24px 0; }
 .update-banner {
@@ -98,6 +101,12 @@ p { margin: 0 0 12px; }
 .mini-stats dd { margin: 0; font-weight: 800; }
 
 .panel, .empty-state { padding: 22px; margin-top: 24px; }
+.auth-card { max-width: 560px; margin: 40px auto; background: var(--panel); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); padding: 30px; }
+.auth-form { display: grid; gap: 14px; margin-top: 20px; }
+.auth-form label { display: grid; gap: 8px; font-weight: 800; }
+.auth-message { border-radius: 14px; margin-top: 18px; padding: 14px 16px; }
+.auth-message.good { background: var(--green-soft); color: var(--green-dark); }
+.auth-message.bad { background: var(--red-soft); color: var(--red); }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 12px 8px; vertical-align: top; }

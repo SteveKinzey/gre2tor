@@ -70,6 +70,14 @@ class Settings:
     PDF_SOURCE_DIR: Path
     FLASK_DEBUG: bool
     SECRET_KEY: str
+    AUTH_ALLOWED_EMAILS: set[str]
+    AUTH_ALLOW_DEV_MAGIC_LINK: bool
+    SMTP_HOST: str | None
+    SMTP_PORT: int
+    SMTP_USERNAME: str | None
+    SMTP_PASSWORD: str | None
+    SMTP_FROM: str | None
+    SMTP_USE_TLS: bool
 
     def as_flask_config(self) -> dict:
         return {
@@ -78,6 +86,8 @@ class Settings:
             "PDF_SOURCE_DIR": self.PDF_SOURCE_DIR,
             "FLASK_DEBUG": self.FLASK_DEBUG,
             "SECRET_KEY": self.SECRET_KEY,
+            "AUTH_ALLOWED_EMAILS": self.AUTH_ALLOWED_EMAILS,
+            "AUTH_ALLOW_DEV_MAGIC_LINK": self.AUTH_ALLOW_DEV_MAGIC_LINK,
         }
 
 
@@ -92,6 +102,9 @@ def load_settings(*, env_file: bool = True, overrides: dict | None = None) -> Se
     database_path = _resolve_path(overrides.get("DATABASE_PATH", os.environ.get("DATABASE_PATH", default_database_path)))
     pdf_source_dir = _resolve_path(overrides.get("PDF_SOURCE_DIR", os.environ.get("PDF_SOURCE_DIR", DEFAULT_PDF_SOURCE_DIR)))
 
+    allowed_emails_raw = str(overrides.get("AUTH_ALLOWED_EMAILS", os.environ.get("AUTH_ALLOWED_EMAILS", "")))
+    allowed_emails = {email.strip().lower() for email in allowed_emails_raw.split(",") if email.strip()}
+
     return Settings(
         BASE_DIR=BASE_DIR,
         INSTANCE_PATH=instance_path,
@@ -99,4 +112,12 @@ def load_settings(*, env_file: bool = True, overrides: dict | None = None) -> Se
         PDF_SOURCE_DIR=pdf_source_dir,
         FLASK_DEBUG=bool(overrides.get("FLASK_DEBUG", _bool_env("FLASK_DEBUG", False))),
         SECRET_KEY=str(overrides.get("SECRET_KEY", os.environ.get("SECRET_KEY", "dev-only-secret-key"))),
+        AUTH_ALLOWED_EMAILS=allowed_emails,
+        AUTH_ALLOW_DEV_MAGIC_LINK=bool(overrides.get("AUTH_ALLOW_DEV_MAGIC_LINK", _bool_env("AUTH_ALLOW_DEV_MAGIC_LINK", False))),
+        SMTP_HOST=overrides.get("SMTP_HOST", os.environ.get("SMTP_HOST")),
+        SMTP_PORT=int(overrides.get("SMTP_PORT", os.environ.get("SMTP_PORT", "587"))),
+        SMTP_USERNAME=overrides.get("SMTP_USERNAME", os.environ.get("SMTP_USERNAME")),
+        SMTP_PASSWORD=overrides.get("SMTP_PASSWORD", os.environ.get("SMTP_PASSWORD")),
+        SMTP_FROM=overrides.get("SMTP_FROM", os.environ.get("SMTP_FROM")),
+        SMTP_USE_TLS=bool(overrides.get("SMTP_USE_TLS", _bool_env("SMTP_USE_TLS", True))),
     )

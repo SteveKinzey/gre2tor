@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Sign in · GRE2Tor{% endblock %}
+
+{% block content %}
+<section class="auth-card">
+  <p class="eyebrow">Secure access</p>
+  <h1>Sign in to GRE2Tor</h1>
+  <p class="lede">Enter your email address and we’ll send you a magic link. No password required.</p>
+
+  {% if error %}
+    <div class="auth-message bad" role="alert">{{ error }}</div>
+  {% endif %}
+
+  {% if sent %}
+    <div class="auth-message good" role="status">
+      <strong>Check your email.</strong>
+      <p>Your login link expires in 15 minutes.</p>
+      {% if dev_magic_link %}
+        <p><strong>Development login link:</strong></p>
+        <p><a href="{{ dev_magic_link }}">{{ dev_magic_link }}</a></p>
+      {% endif %}
+    </div>
+  {% else %}
+    <form method="post" class="auth-form">
+      <input type="hidden" name="next" value="{{ next_url }}">
+      <label>
+        Email address
+        <input type="email" name="email" autocomplete="email" required autofocus>
+      </label>
+      <button class="button primary" type="submit">Send magic link</button>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}

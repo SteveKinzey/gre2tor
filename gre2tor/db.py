@@ -66,6 +66,12 @@ CREATE TABLE IF NOT EXISTS card_progress (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    email TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    last_login_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_cards_topic_id ON cards(topic_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_card_id ON attempts(card_id);
 CREATE INDEX IF NOT EXISTS idx_attempts_topic_id ON attempts(topic_id);
@@ -127,6 +133,15 @@ def init_db(database_path: str | Path) -> None:
     with connection(database_path) as conn:
         conn.executescript(SCHEMA_SQL)
         _migrate_cards_table(conn)
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                email TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                last_login_at TEXT NOT NULL
+            )
+            """
+        )
 
 
 def row_to_dict(row: sqlite3.Row | None) -> dict | None:

@@ -1,5 +1,16 @@
 from __future__ import annotations
 
+from .auth import (
+    allowed_email,
+    create_magic_token,
+    is_valid_email,
+    magic_link_for,
+    normalize_email,
+    send_magic_link,
+    smtp_is_configured,
+    upsert_user_login,
+    verify_magic_token,
+)
 from .config import load_settings
 from .db import (
     connection,
@@ -21,7 +32,7 @@ from .version import APP_VERSION
 def create_app(config_override: dict | None = None):
     """Create the local Flask app."""
 
-    from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
+    from flask import Flask, abort, g, jsonify, redirect, render_template, request, session, url_for
 
     settings = load_settings(overrides=config_override)
     app = Flask(
@@ -45,7 +56,79 @@ def create_app(config_override: dict | None = None):
 
     @app.context_processor
     def inject_app_metadata():
-        return {"app_version": APP_VERSION, "update_info": check_for_updates()}
+        return {
+            "app_version": APP_VERSION,
+            "current_user_email": session.get("user_email"),
+            "update_info": check_for_updates(),
+        }
+
+    @app.before_request
+    def require_login():
+        public_endpoints = {"login", "magic_login", "health", "api_updates", "static"}
+        if request.endpoint in public_endpoints:
+            return None
+        if session.get("user_email"):
+            g.user_email = session["user_email"]
+            return None
+        if request.path.startswith("/api/"):
+            return jsonify({"error": "Authentication required"}), 401
+        return redirect(url_for("login", next=request.full_path if request.query_string else request.path))
+
+    def _safe_next(value: str | None) -> str:
+        if value and value.startswith("/") and not value.startswith("//"):
+            return value
+        return url_for("index")
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        error = None
+        sent = False
+        dev_magic_link = None
+        next_url = _safe_next(request.values.get("next"))
+
+        if request.method == "POST":
+            email = normalize_email(request.form.get("email"))
+            if not is_valid_email(email):
+                error = "Enter a valid email address."
+            elif not allowed_email(email, settings.AUTH_ALLOWED_EMAILS):
+                error = "That email is not allowed to access GRE2Tor."
+            else:
+                token = create_magic_token(settings.SECRET_KEY, email)
+                link = magic_link_for(email, token)
+                if "next=" not in link and next_url:
+                    separator = "&" if "?" in link else "?"
+                    link = f"{link}{separator}next={next_url}"
+                if smtp_is_configured(settings):
+                    try:
+                        send_magic_link(settings, email=email, link=link)
+                        sent = True
+                    except RuntimeError as exc:
+                        error = str(exc)
+                    except Exception:
+                        error = "Could not send the login email. Check SMTP settings."
+                elif settings.AUTH_ALLOW_DEV_MAGIC_LINK:
+                    sent = True
+                    dev_magic_link = link
+                else:
+                    error = "Email login is not configured. Set SMTP settings for GRE2Tor."
+
+        return render_template("login.html", error=error, sent=sent, dev_magic_link=dev_magic_link, next_url=next_url)
+
+    @app.get("/login/<token>")
+    def magic_login(token: str):
+        email = verify_magic_token(settings.SECRET_KEY, token)
+        if not email or not allowed_email(email, settings.AUTH_ALLOWED_EMAILS):
+            return render_template("login.html", error="That login link is invalid or expired.", sent=False, dev_magic_link=None, next_url=url_for("index")), 400
+        with connection(settings.DATABASE_PATH) as conn:
+            upsert_user_login(conn, email)
+        session.clear()
+        session["user_email"] = email
+        return redirect(_safe_next(request.args.get("next")))
+
+    @app.post("/logout")
+    def logout():
+        session.clear()
+        return redirect(url_for("login"))
 
     @app.get("/")
     def index():
